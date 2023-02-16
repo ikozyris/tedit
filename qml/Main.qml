@@ -1,4 +1,3 @@
-
 import QtQuick 2.4
 import Ubuntu.Components 1.3
 import EdIt 1.0
@@ -27,7 +26,7 @@ MainView {
 
     /* Note! applicationName needs to match the "name" field of the click manifest */
     applicationName: "tedit.fulvio"
-    property string appVersion : "2.8.4"
+    property string appVersion : "2.9.0"
 
     /* application hidden folder where are saved the files. (path is fixed due to Appp confinement rules) */
     property string fileSavingPath: "/.local/share/tedit.fulvio/"
@@ -213,10 +212,10 @@ MainView {
     }
 
     /* PopUp with the menu */
-    Component {
-       id: menuOptions
-       MenuOptions{}
-    }
+//    Component {
+//       id: menuOptions
+//       MenuOptions{}
+//    }
 
     /* Ask for a web-site url to import as text in the textArea */
     Component {
@@ -281,35 +280,150 @@ MainView {
 
                 id: header
 
-                ClickableHeaderIcon {
-                      id: about_button
-                      iconSource: "menu.png"
-                      text: i18n.tr("Menu")
-                      anchors {
-                          leftMargin: units.gu(1)
-                          rightMargin: units.gu(5)
-                          verticalCenter: header.verticalCenter
-                      }
-                      onTriggered: {
-                         PopupUtils.open(menuOptions);
-                      }
-                }
+                ActionBar{ //---------------------------------------------------------------
+                 
+                    numberOfSlots: 2
+    	              actions: [
 
-                ClickableHeaderIcon {
-                      id: settings_button
-                      iconname: "settings"
-                      text: i18n.tr("Settings")
-                      anchors {
-                          left: about_button.right
-                          leftMargin: units.gu(3)
-                          rightMargin: units.gu(2)
-                          verticalCenter: header.verticalCenter
-                      }
-                      onTriggered: {
-                         pageStack.push(settingsPage)
-                         settingsPage.visible = true
-                      }
-                }
+                        Action {
+                            iconName: 'settings'
+                            text: i18n.tr("Settings")
+                            onTriggered: {
+                                pageStack.push(settingsPage)
+                                settingsPage.visible = true
+                            }
+                        },
+                      //---------------------- OPEN -------------
+                      Action {
+                        iconName: 'document-open'   
+                        onTriggered: {
+                            pageStack.push(Qt.resolvedUrl("../ui/LocalFilePickerPage.qml"))
+                        }
+                        text: i18n.tr("Open")
+                       },
+
+                      //------------------------ SAVE -------------------
+                      Action {
+                            iconName: 'save'
+                            onTriggered: {
+                                if(mainPage.openedFileName == "") { /* true if file is new, never saved  */
+                                        PopupUtils.open(saveAsDialog)
+                                } else { /* file not new: already exist: just update content */
+                                        /* function in Main.qml file */
+                                        saveExistingFile(mainPage.openedFileName,fileIO.getHomePath() + root.fileSavingPath)
+                                }                   
+                            }    
+                            text: i18n.tr("Save")
+                        },
+
+                       //--------------------- SAVE AS -----------------------
+                       Action {
+                            iconName: 'save-as'
+                            onTriggered: {
+                                PopupUtils.open(saveAsDialog) 
+                            }
+                            text: i18n.tr("Save As")
+
+                       },
+
+                       //------------------- Undo --------------------
+                       Action {
+                            iconName: 'edit-undo'
+                            onTriggered: {
+                                textArea.undo()
+                            }
+                            text: i18n.tr("Undo last Modification")
+
+                        },
+
+                       //----------------------- Redo ---------------
+                       Action {
+                            iconName: 'edit-redo'
+                            onTriggered: {
+                             textArea.redo()
+                            }
+                            text: i18n.tr("Redo last Modification")
+                         },
+
+                         //-------------------------- SELECT ALL ---------------------
+                         Action {
+                            iconName: 'select'
+                            onTriggered: {
+                                textArea.selectAll(); 
+                            }
+                            text: i18n.tr("Select All")
+                          },
+
+                         //--------------- CLEAR ----------------
+                         Action {
+                            iconName: 'edit-clear'
+                            onTriggered: {
+                                PopupUtils.open(confirmClearAll)    
+                            }
+                            text: i18n.tr("Clear Area")
+
+                          },
+
+                          //-------------------- PASTE FROM CLIPBOARD -------------
+                          Action {
+                            iconName: 'edit-paste'
+                            onTriggered: {
+                                PopupUtils.open(confirmPasteFromClipboard)                                
+                            }
+                            text: i18n.tr("Paste from Clipboard")
+                           },
+
+                           //---------------------- COPY TO CLIPBOARD ----------------
+                            Action {
+                            iconName: 'edit-copy'
+                            onTriggered: {
+                               textArea.copy();
+                            }
+                            text: i18n.tr("Copy to Clipboard")
+
+                            },
+
+                             //--------------------- Import site as Text---------------
+                            Action {
+                            iconName: 'stock_website'
+                            onTriggered: {
+                                PopupUtils.open(webSiteSelector);
+                            }
+                            text: i18n.tr("Import a site as text")
+                            },
+
+                               //---------------------- DIGEST --------------
+                            Action {
+                                iconSource: Qt.resolvedUrl("graphics/digest.png")
+                                onTriggered: {
+                                    PopupUtils.open(digestCalculatorChooser)
+                                }
+                                text: i18n.tr("Digest")
+                                },
+
+                             //---------------------------- Base64 ----------------------------
+                            Action {
+
+                                iconSource: Qt.resolvedUrl("graphics/base64.png")
+                                
+                                onTriggered: {
+                                    pageStack.push(base64conversionPage);
+                                }
+                                text: i18n.tr("Base 64")    
+                            },
+
+                              //--------------QR Code generator ----------------
+                            Action {
+                                id:qrCodeGeneratorContainer
+
+                                iconSource: Qt.resolvedUrl("graphics/qrcode.png")
+                                onTriggered: {
+                                    PopupUtils.open(qrCodeWebSiteSelector);
+                                }
+                                text: i18n.tr("QR Code")
+                            }
+                        ]      //------------------------------------------------
+                     }
 
                 Label {
                    id: titleLabel
@@ -324,7 +438,7 @@ MainView {
                 ClickableHeaderIcon {
                         id: menu_button
                         iconcolor: UbuntuColors.green
-                        iconSource: "tedit.png" //Qt.resolvedUrl("./graphics/menu.png")
+                        iconSource: "../assets/tedit.png" //Qt.resolvedUrl("./graphics/menu.png")
                         text: i18n.tr("About")
                         anchors {
                               right: header.right
